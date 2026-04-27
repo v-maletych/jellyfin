@@ -3132,6 +3132,18 @@ namespace Emby.Server.Implementations.Library
                     }
                 }
 
+                if (personEntity.DateLastRefreshed == DateTime.MinValue)
+                {
+                    var metadataRefreshOptions = new MetadataRefreshOptions(new DirectoryService(_fileSystem))
+                    {
+                        ImageRefreshMode = MetadataRefreshMode.None,
+                        MetadataRefreshMode = MetadataRefreshMode.Default
+                    };
+
+                    itemUpdateType |= await personEntity.RefreshMetadata(metadataRefreshOptions, cancellationToken).ConfigureAwait(false);
+                    saveEntity = false;
+                }
+
                 if (!string.IsNullOrWhiteSpace(person.ImageUrl) && !personEntity.HasImage(ImageType.Primary))
                 {
                     personEntity.SetImage(
