@@ -851,7 +851,7 @@ public sealed class BaseItemRepository
         }
 
         dto.ExtraIds = string.IsNullOrWhiteSpace(entity.ExtraIds) ? [] : entity.ExtraIds.Split('|').Select(e => Guid.Parse(e)).ToArray();
-        dto.ProductionLocations = entity.ProductionLocations?.Split('|') ?? [];
+        dto.ProductionLocations = SplitCleanStringArray(entity.ProductionLocations);
         dto.Studios = entity.Studios?.Split('|') ?? [];
         dto.Tags = string.IsNullOrWhiteSpace(entity.Tags) ? [] : entity.Tags.Split('|');
 
@@ -1013,7 +1013,7 @@ public sealed class BaseItemRepository
         }
 
         entity.ExtraIds = dto.ExtraIds is not null ? string.Join('|', dto.ExtraIds) : null;
-        entity.ProductionLocations = dto.ProductionLocations is not null ? string.Join('|', dto.ProductionLocations) : null;
+        entity.ProductionLocations = dto.ProductionLocations is not null ? string.Join('|', dto.ProductionLocations.Where(e => !string.IsNullOrWhiteSpace(e))) : null;
         entity.Studios = dto.Studios is not null ? string.Join('|', dto.Studios) : null;
         entity.Tags = dto.Tags is not null ? string.Join('|', dto.Tags) : null;
         entity.LockedFields = dto.LockedFields is not null ? dto.LockedFields
@@ -1151,6 +1151,11 @@ public sealed class BaseItemRepository
             _logger,
             _appHost,
             skipDeserialization || (_serverConfigurationManager.Configuration.SkipDeserializationForBasicTypes && (typeToSerialise == typeof(Channel) || typeToSerialise == typeof(UserRootFolder))));
+    }
+
+    private static string[] SplitCleanStringArray(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? [] : value.Split('|').Where(e => !string.IsNullOrWhiteSpace(e)).ToArray();
     }
 
     /// <summary>

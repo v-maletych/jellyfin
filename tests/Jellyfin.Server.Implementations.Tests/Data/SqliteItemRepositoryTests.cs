@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using AutoFixture;
 using AutoFixture.AutoMoq;
 using Emby.Server.Implementations.Data;
+using Jellyfin.Database.Implementations.Entities;
 using Jellyfin.Server.Implementations.Item;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Entities;
+using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -177,6 +180,35 @@ namespace Jellyfin.Server.Implementations.Tests.Data
                 Array.Empty<ItemImageInfo>());
 
             return data;
+        }
+
+        [Fact]
+        public void DeserializeBaseItem_ProductionLocations_FiltersEmptyValues()
+        {
+            var entity = new BaseItemEntity
+            {
+                Id = Guid.NewGuid(),
+                Type = typeof(Movie).FullName!,
+                ProductionLocations = "|United States| |Canada||"
+            };
+
+            var item = BaseItemRepository.DeserializeBaseItem(entity, NullLogger<BaseItemRepository>.Instance, null);
+
+            Assert.Equal(["United States", "Canada"], item.ProductionLocations);
+        }
+
+        [Fact]
+        public void Map_ProductionLocations_FiltersEmptyValues()
+        {
+            var item = new Movie
+            {
+                Id = Guid.NewGuid(),
+                ProductionLocations = ["United States", string.Empty, " ", "Canada"]
+            };
+
+            var entity = _sqliteItemRepository.Map(item);
+
+            Assert.Equal("United States|Canada", entity.ProductionLocations);
         }
 
         private sealed class ProviderIdsExtensionsTestsObject : IHasProviderIds
