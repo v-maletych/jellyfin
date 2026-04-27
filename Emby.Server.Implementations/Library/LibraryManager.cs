@@ -3141,7 +3141,6 @@ namespace Emby.Server.Implementations.Library
                     };
 
                     itemUpdateType |= await personEntity.RefreshMetadata(metadataRefreshOptions, cancellationToken).ConfigureAwait(false);
-                    saveEntity = false;
                 }
 
                 if (!string.IsNullOrWhiteSpace(person.ImageUrl) && !personEntity.HasImage(ImageType.Primary))
