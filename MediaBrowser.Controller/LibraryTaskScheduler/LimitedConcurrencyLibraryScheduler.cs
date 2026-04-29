@@ -272,6 +272,7 @@ public sealed class LimitedConcurrencyLibraryScheduler : ILimitedConcurrencyLibr
             _logger.LogDebug("Nested invocation detected, process in-place.");
             try
             {
+                await Task.Yield();
                 // we are in a nested loop. There is no reason to spawn a task here as that would just lead to deadlocks and no additional concurrency is achieved
                 while (workItems.Any(e => !e.Done.Task.IsCompleted) && _tasks.TryTake(out var item, 200, _deadlockDetector.Value.Token))
                 {
