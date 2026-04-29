@@ -2122,12 +2122,20 @@ public sealed class BaseItemRepository
         {
             var max = filter.MaxParentalRating;
             var maxScore = max.Score;
-            var maxSubScore = max.SubScore ?? 0;
-
-            maxParentalRatingFilter = e =>
-                e.InheritedParentalRatingValue == null ||
-                e.InheritedParentalRatingValue < maxScore ||
-                (e.InheritedParentalRatingValue == maxScore && (e.InheritedParentalRatingSubValue ?? 0) <= maxSubScore);
+            if (max.SubScore.HasValue)
+            {
+                var maxSubScore = max.SubScore.Value;
+                maxParentalRatingFilter = e =>
+                    e.InheritedParentalRatingValue == null ||
+                    e.InheritedParentalRatingValue < maxScore ||
+                    (e.InheritedParentalRatingValue == maxScore && (e.InheritedParentalRatingSubValue ?? 0) <= maxSubScore);
+            }
+            else
+            {
+                maxParentalRatingFilter = e =>
+                    e.InheritedParentalRatingValue == null ||
+                    e.InheritedParentalRatingValue <= maxScore;
+            }
         }
 
         if (filter.HasParentalRating ?? false)

@@ -1,5 +1,8 @@
+using System.Collections.Generic;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Model.Entities;
+using MediaBrowser.Model.Globalization;
 using MediaBrowser.Model.MediaInfo;
 using Moq;
 using Xunit;
@@ -42,5 +45,58 @@ public class BaseItemTests
 
         Assert.Equal(name, video.GetMediaSourceName(video));
         Assert.Equal(altName, video.GetMediaSourceName(videoAlt));
+    }
+
+    [Fact]
+    public void IsParentalAllowed_AllowsSubScoredRating_WhenUserLimitHasNoSubScore()
+    {
+        var localizationManager = new Mock<ILocalizationManager>();
+        localizationManager.Setup(x => x.GetRatingScore("TV-14", null))
+            .Returns(new ParentalRatingScore(14, 1));
+        BaseItem.LocalizationManager = localizationManager.Object;
+        var libraryManager = new Mock<ILibraryManager>();
+        libraryManager.Setup(x => x.GetCollectionFolders(It.IsAny<BaseItem>()))
+            .Returns(new List<Folder>());
+        BaseItem.LibraryManager = libraryManager.Object;
+
+        var user = new Jellyfin.Database.Implementations.Entities.User("test", "auth", "reset")
+        {
+            MaxParentalRatingScore = 14
+        };
+
+        var item = new Video
+        {
+            Name = "Test",
+            OfficialRating = "TV-14"
+        };
+
+        Assert.True(item.IsParentalAllowed(user, false));
+    }
+
+    [Fact]
+    public void IsParentalAllowed_BlocksHigherSubScoredRating_WhenUserLimitHasSubScore()
+    {
+        var localizationManager = new Mock<ILocalizationManager>();
+        localizationManager.Setup(x => x.GetRatingScore("TV-14-L", null))
+            .Returns(new ParentalRatingScore(14, 1));
+        BaseItem.LocalizationManager = localizationManager.Object;
+        var libraryManager = new Mock<ILibraryManager>();
+        libraryManager.Setup(x => x.GetCollectionFolders(It.IsAny<BaseItem>()))
+            .Returns(new List<Folder>());
+        BaseItem.LibraryManager = libraryManager.Object;
+
+        var user = new Jellyfin.Database.Implementations.Entities.User("test", "auth", "reset")
+        {
+            MaxParentalRatingScore = 14,
+            MaxParentalRatingSubScore = 0
+        };
+
+        var item = new Video
+        {
+            Name = "Test",
+            OfficialRating = "TV-14-L"
+        };
+
+        Assert.False(item.IsParentalAllowed(user, false));
     }
 }
