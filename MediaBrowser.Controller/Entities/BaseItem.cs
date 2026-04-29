@@ -1630,12 +1630,7 @@ namespace MediaBrowser.Controller.Entities
                 return ratingScore.Score < maxAllowedRating.Value;
             }
 
-            if (maxAllowedSubRating is not null)
-            {
-                return (ratingScore.SubScore ?? 0) <= maxAllowedSubRating;
-            }
-
-            return true;
+            return !maxAllowedSubRating.HasValue || (ratingScore.SubScore ?? 0) <= maxAllowedSubRating.Value;
         }
 
         public ParentalRatingScore GetParentalRatingScore()
