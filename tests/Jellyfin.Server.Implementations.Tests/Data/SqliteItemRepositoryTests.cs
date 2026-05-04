@@ -9,6 +9,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
@@ -177,6 +178,40 @@ namespace Jellyfin.Server.Implementations.Tests.Data
                 Array.Empty<ItemImageInfo>());
 
             return data;
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("|")]
+        public void DeserializeBaseItem_EmptyProductionLocations_DoesNotReturnEmptyLocation(string? productionLocations)
+        {
+            var entity = new Jellyfin.Database.Implementations.Entities.BaseItemEntity
+            {
+                Id = Guid.NewGuid(),
+                Type = typeof(Person).ToString(),
+                ProductionLocations = productionLocations
+            };
+
+            var item = BaseItemRepository.DeserializeBaseItem(entity, NullLogger.Instance, null);
+
+            Assert.Empty(item.ProductionLocations);
+        }
+
+        [Fact]
+        public void DeserializeBaseItem_ProductionLocationsWithEmptyEntries_DropsEmptyLocations()
+        {
+            var entity = new Jellyfin.Database.Implementations.Entities.BaseItemEntity
+            {
+                Id = Guid.NewGuid(),
+                Type = typeof(Person).ToString(),
+                ProductionLocations = "|New York City, New York, USA"
+            };
+
+            var item = BaseItemRepository.DeserializeBaseItem(entity, NullLogger.Instance, null);
+
+            Assert.Equal(["New York City, New York, USA"], item.ProductionLocations);
         }
 
         private sealed class ProviderIdsExtensionsTestsObject : IHasProviderIds
