@@ -81,6 +81,44 @@ namespace Jellyfin.Server.Implementations.Tests.Updates
         }
 
         [Fact]
+        public async Task GetPackages_InvalidUrlScheme_ReturnsEmpty()
+        {
+            var messageHandler = new Mock<HttpMessageHandler>();
+            messageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ThrowsAsync(new NotSupportedException("The 'ftp' scheme is not supported."));
+
+            var http = new Mock<IHttpClientFactory>();
+            http.Setup(x => x.CreateClient(It.IsAny<string>()))
+                .Returns(new HttpClient(messageHandler.Object));
+            var fixture = new Fixture();
+            fixture.Customize(new AutoMoqCustomization
+            {
+                ConfigureMembers = true
+            });
+            fixture.Inject(http);
+            var installationManager = fixture.Create<InstallationManager>();
+
+            PackageInfo[] packages = await installationManager.GetPackages(
+                "Invalid Repo",
+                "ftp://example.invalid/manifest.json",
+                false);
+
+            Assert.Empty(packages);
+        }
+
+        [Fact]
+        public async Task GetPackages_MalformedUrl_ReturnsEmpty()
+        {
+            PackageInfo[] packages = await _installationManager.GetPackages(
+                "Invalid Repo",
+                "not a valid url",
+                false);
+
+            Assert.Empty(packages);
+        }
+
+        [Fact]
         public async Task InstallPackage_InvalidChecksum_ThrowsInvalidDataException()
         {
             var packageInfo = new InstallationInfo()
