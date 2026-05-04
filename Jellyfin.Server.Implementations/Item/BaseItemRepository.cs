@@ -851,7 +851,7 @@ public sealed class BaseItemRepository
         }
 
         dto.ExtraIds = string.IsNullOrWhiteSpace(entity.ExtraIds) ? [] : entity.ExtraIds.Split('|').Select(e => Guid.Parse(e)).ToArray();
-        dto.ProductionLocations = entity.ProductionLocations?.Split('|') ?? [];
+        dto.ProductionLocations = string.IsNullOrWhiteSpace(entity.ProductionLocations) ? [] : entity.ProductionLocations.Split('|', StringSplitOptions.RemoveEmptyEntries);
         dto.Studios = entity.Studios?.Split('|') ?? [];
         dto.Tags = string.IsNullOrWhiteSpace(entity.Tags) ? [] : entity.Tags.Split('|');
 
