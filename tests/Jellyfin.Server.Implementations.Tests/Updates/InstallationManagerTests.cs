@@ -57,6 +57,31 @@ namespace Jellyfin.Server.Implementations.Tests.Updates
         }
 
         [Fact]
+        public async Task GetPackages_UnsupportedUriScheme_ReturnsEmpty()
+        {
+            var messageHandler = new Mock<HttpMessageHandler>();
+            messageHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ThrowsAsync(new NotSupportedException("The 'ttps' scheme is not supported."));
+
+            var http = new Mock<IHttpClientFactory>();
+            http.Setup(x => x.CreateClient(It.IsAny<string>()))
+                .Returns(new HttpClient(messageHandler.Object));
+
+            var fixture = new Fixture();
+            fixture.Customize(new AutoMoqCustomization { ConfigureMembers = true });
+            fixture.Inject(http);
+            var installationManager = fixture.Create<InstallationManager>();
+
+            PackageInfo[] packages = await installationManager.GetPackages(
+                "Invalid Repo",
+                "ttps://github.com/example/manifest.json",
+                false);
+
+            Assert.Empty(packages);
+        }
+
+        [Fact]
         public async Task FilterPackages_NameOnly_Success()
         {
             PackageInfo[] packages = await _installationManager.GetPackages(
